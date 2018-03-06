@@ -1,0 +1,7 @@
+
+build/bitbake.lock
+build/cache
+build/downloads
+build/sstate-cache
+build/tmp-glibc
+out/rootfs.tar.gz
