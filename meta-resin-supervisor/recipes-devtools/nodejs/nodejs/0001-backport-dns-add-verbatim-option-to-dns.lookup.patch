@@ -1,0 +1,220 @@
+From 48165469acafb2e82adbf7798084b08e39849dd5 Mon Sep 17 00:00:00 2001
+From: Ben Noordhuis <info@bnoordhuis.nl>
+Date: Thu, 10 Aug 2017 11:19:13 +0200
+Subject: [PATCH] (backport) dns: add `verbatim` option to dns.lookup()
+
+When true, results from the DNS resolver are passed on as-is, without
+the reshuffling that Node.js otherwise does that puts IPv4 addresses
+before IPv6 addresses.
+
+PR-URL: https://github.com/nodejs/node/pull/14731
+Ref: https://github.com/nodejs/node/issues/6307
+Reviewed-By: Refael Ackermann <refack@gmail.com>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Upstream-Status: Backport
+---
+ doc/api/dns.md            |  6 ++++
+ lib/dns.js                |  4 ++-
+ src/cares_wrap.cc         | 87 +++++++++++++++++------------------------------
+ test/internet/test-dns.js |  2 +-
+ 4 files changed, 41 insertions(+), 58 deletions(-)
+
+diff --git a/doc/api/dns.md b/doc/api/dns.md
+index 775d288..503b35c 100644
+--- a/doc/api/dns.md
++++ b/doc/api/dns.md
+@@ -83,6 +83,12 @@ Alternatively, `options` can be an object containing these properties:
+   flags.
+ * `all`: {Boolean} - When `true`, the callback returns all resolved addresses
+   in an array, otherwise returns a single address. Defaults to `false`.
++* `verbatim` {boolean} When `true`, the callback receives IPv4 and IPv6
++  addresses in the order the DNS resolver returned them.  When `false`,
++  IPv4 addresses are placed before IPv6 addresses.
++  Default: currently `false` (addresses are reordered) but this is expected
++  to change in the not too distant future.
++  New code should use `{ verbatim: true }`.
+ 
+ All properties are optional. An example usage of options is shown below.
+ 
+diff --git a/lib/dns.js b/lib/dns.js
+index 7c76aeb..2a04d1f 100644
+--- a/lib/dns.js
++++ b/lib/dns.js
+@@ -106,6 +106,7 @@ exports.lookup = function lookup(hostname, options, callback) {
+   var hints = 0;
+   var family = -1;
+   var all = false;
++  var verbatim = false;
+ 
+   // Parse arguments
+   if (hostname && typeof hostname !== 'string') {
+@@ -120,6 +121,7 @@ exports.lookup = function lookup(hostname, options, callback) {
+     hints = options.hints >>> 0;
+     family = options.family >>> 0;
+     all = options.all === true;
++    verbatim = options.verbatim === true;
+ 
+     if (hints !== 0 &&
+         hints !== exports.ADDRCONFIG &&
+@@ -161,7 +163,7 @@ exports.lookup = function lookup(hostname, options, callback) {
+   req.hostname = hostname;
+   req.oncomplete = all ? onlookupall : onlookup;
+ 
+-  var err = cares.getaddrinfo(req, hostname, family, hints);
++  var err = cares.getaddrinfo(req, hostname, family, hints, verbatim);
+   if (err) {
+     callback(errnoException(err, 'getaddrinfo', hostname));
+     return {};
+diff --git a/src/cares_wrap.cc b/src/cares_wrap.cc
+index 4a9c6f7..e333b4a 100644
+--- a/src/cares_wrap.cc
++++ b/src/cares_wrap.cc
+@@ -49,14 +49,20 @@ using v8::Value;
+ 
+ class GetAddrInfoReqWrap : public ReqWrap<uv_getaddrinfo_t> {
+  public:
+-  GetAddrInfoReqWrap(Environment* env, Local<Object> req_wrap_obj);
++  GetAddrInfoReqWrap(Environment* env, Local<Object> req_wrap_obj, bool verbatim);
+ 
+   size_t self_size() const override { return sizeof(*this); }
++  bool verbatim() const { return verbatim_; }
++
++ private:
++  const bool verbatim_;
+ };
+ 
+ GetAddrInfoReqWrap::GetAddrInfoReqWrap(Environment* env,
+-                                       Local<Object> req_wrap_obj)
+-    : ReqWrap(env, req_wrap_obj, AsyncWrap::PROVIDER_GETADDRINFOREQWRAP) {
++                                       Local<Object> req_wrap_obj,
++                                       bool verbatim)
++    : ReqWrap(env, req_wrap_obj, AsyncWrap::PROVIDER_GETADDRINFOREQWRAP)
++    , verbatim_(verbatim) {
+   Wrap(req_wrap_obj, this);
+ }
+ 
+@@ -962,70 +968,38 @@ void AfterGetAddrInfo(uv_getaddrinfo_t* req, int status, struct addrinfo* res) {
+   };
+ 
+   if (status == 0) {
+-    // Success
+-    struct addrinfo *address;
+     int n = 0;
+-
+-    // Create the response array.
+     Local<Array> results = Array::New(env->isolate());
+ 
+-    char ip[INET6_ADDRSTRLEN];
+-    const char *addr;
+-
+-    // Iterate over the IPv4 responses again this time creating javascript
+-    // strings for each IP and filling the results array.
+-    address = res;
+-    while (address) {
+-      CHECK_EQ(address->ai_socktype, SOCK_STREAM);
+-
+-      // Ignore random ai_family types.
+-      if (address->ai_family == AF_INET) {
+-        // Juggle pointers
+-        addr = reinterpret_cast<char*>(&(reinterpret_cast<struct sockaddr_in*>(
+-            address->ai_addr)->sin_addr));
+-        int err = uv_inet_ntop(address->ai_family,
+-                               addr,
+-                               ip,
+-                               INET6_ADDRSTRLEN);
+-        if (err)
++    auto add = [&] (bool want_ipv4, bool want_ipv6) {
++      for (auto p = res; p != nullptr; p = p->ai_next) {
++        CHECK_EQ(p->ai_socktype, SOCK_STREAM);
++
++        const char* addr;
++        if (want_ipv4 && p->ai_family == AF_INET) {
++          addr = reinterpret_cast<char*>(
++              &(reinterpret_cast<struct sockaddr_in*>(p->ai_addr)->sin_addr));
++        } else if (want_ipv6 && p->ai_family == AF_INET6) {
++          addr = reinterpret_cast<char*>(
++              &(reinterpret_cast<struct sockaddr_in6*>(p->ai_addr)->sin6_addr));
++        } else {
+           continue;
++        }
+ 
+-        // Create JavaScript string
+-        Local<String> s = OneByteString(env->isolate(), ip);
+-        results->Set(n, s);
+-        n++;
+-      }
+-
+-      // Increment
+-      address = address->ai_next;
+-    }
+-
+-    // Iterate over the IPv6 responses putting them in the array.
+-    address = res;
+-    while (address) {
+-      CHECK_EQ(address->ai_socktype, SOCK_STREAM);
+-
+-      // Ignore random ai_family types.
+-      if (address->ai_family == AF_INET6) {
+-        // Juggle pointers
+-        addr = reinterpret_cast<char*>(&(reinterpret_cast<struct sockaddr_in6*>(
+-            address->ai_addr)->sin6_addr));
+-        int err = uv_inet_ntop(address->ai_family,
+-                               addr,
+-                               ip,
+-                               INET6_ADDRSTRLEN);
+-        if (err)
++        char ip[INET6_ADDRSTRLEN];
++        if (uv_inet_ntop(p->ai_family, addr, ip, sizeof(ip)))
+           continue;
+ 
+-        // Create JavaScript string
+         Local<String> s = OneByteString(env->isolate(), ip);
+         results->Set(n, s);
+         n++;
+       }
++    };
+ 
+-      // Increment
+-      address = address->ai_next;
+-    }
++    const bool verbatim = req_wrap->verbatim();
++    add(true, verbatim);
++    if (verbatim == false)
++      add(false, true);
+ 
+     // No responses were found to return
+     if (n == 0) {
+@@ -1116,6 +1090,7 @@ static void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsObject());
+   CHECK(args[1]->IsString());
+   CHECK(args[2]->IsInt32());
++  CHECK(args[4]->IsBoolean());
+   Local<Object> req_wrap_obj = args[0].As<Object>();
+   node::Utf8Value hostname(env->isolate(), args[1]);
+ 
+@@ -1137,7 +1112,7 @@ static void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
+     ABORT();
+   }
+ 
+-  GetAddrInfoReqWrap* req_wrap = new GetAddrInfoReqWrap(env, req_wrap_obj);
++  auto req_wrap = new GetAddrInfoReqWrap(env, req_wrap_obj, args[4]->IsTrue());
+ 
+   struct addrinfo hints;
+   memset(&hints, 0, sizeof(struct addrinfo));
+diff --git a/test/internet/test-dns.js b/test/internet/test-dns.js
+index aec66f5..273c630 100644
+--- a/test/internet/test-dns.js
++++ b/test/internet/test-dns.js
+@@ -488,7 +488,7 @@ console.log('looking up nodejs.org...');
+ 
+ var cares = process.binding('cares_wrap');
+ var req = new cares.GetAddrInfoReqWrap();
+-cares.getaddrinfo(req, 'nodejs.org', 4);
++cares.getaddrinfo(req, 'nodejs.org', 4, /* hints */ 0, /* verbatim */ true);
+ 
+ req.oncomplete = function(err, domains) {
+   assert.strictEqual(err, 0);
+-- 
+2.7.4
+
