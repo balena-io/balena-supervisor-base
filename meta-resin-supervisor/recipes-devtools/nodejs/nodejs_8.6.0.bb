@@ -1,7 +1,7 @@
 DESCRIPTION = "nodeJS Evented I/O for V8 JavaScript"
 HOMEPAGE = "http://nodejs.org"
 LICENSE = "MIT & BSD & Artistic-2.0"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=23bbe20ee15d74b4c56e57f73e9c039b"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=e4d35c6120f175e1fbe5ff908b1cf2d6"
 
 require ${TOPDIR}/../meta-oe/meta-oe/recipes-devtools/nodejs/nodejs_8.9.4.bb
 
