@@ -1,2 +1,4 @@
 FROM scratch
-ADD ./dest/rootfs.tar.gz /
+ADD ./out/rootfs.tar.gz /
+
+CMD [ "/sbin/init" ]
