@@ -1,7 +1,7 @@
-From 48165469acafb2e82adbf7798084b08e39849dd5 Mon Sep 17 00:00:00 2001
+From 485cbedb09455f74581342b9d32b5d0f50f4d0f6 Mon Sep 17 00:00:00 2001
 From: Ben Noordhuis <info@bnoordhuis.nl>
 Date: Thu, 10 Aug 2017 11:19:13 +0200
-Subject: [PATCH] (backport) dns: add `verbatim` option to dns.lookup()
+Subject: [PATCH] dns: add `verbatim` option to dns.lookup()
 
 When true, results from the DNS resolver are passed on as-is, without
 the reshuffling that Node.js otherwise does that puts IPv4 addresses
@@ -16,29 +16,29 @@ Upstream-Status: Backport
 ---
  doc/api/dns.md            |  6 ++++
  lib/dns.js                |  4 ++-
- src/cares_wrap.cc         | 87 +++++++++++++++++------------------------------
+ src/cares_wrap.cc         | 89 ++++++++++++++++++-----------------------------
  test/internet/test-dns.js |  2 +-
- 4 files changed, 41 insertions(+), 58 deletions(-)
+ 4 files changed, 43 insertions(+), 58 deletions(-)
 
 diff --git a/doc/api/dns.md b/doc/api/dns.md
-index 775d288..503b35c 100644
+index 7fce919..37c9395 100644
 --- a/doc/api/dns.md
 +++ b/doc/api/dns.md
-@@ -83,6 +83,12 @@ Alternatively, `options` can be an object containing these properties:
+@@ -86,6 +86,12 @@ Alternatively, `options` can be an object containing these properties:
    flags.
- * `all`: {Boolean} - When `true`, the callback returns all resolved addresses
+ * `all`: {boolean} - When `true`, the callback returns all resolved addresses
    in an array, otherwise returns a single address. Defaults to `false`.
-+* `verbatim` {boolean} When `true`, the callback receives IPv4 and IPv6
++* `verbatim` {boolean} - When `true`, the callback receives IPv4 and IPv6
 +  addresses in the order the DNS resolver returned them.  When `false`,
 +  IPv4 addresses are placed before IPv6 addresses.
 +  Default: currently `false` (addresses are reordered) but this is expected
 +  to change in the not too distant future.
 +  New code should use `{ verbatim: true }`.
  
- All properties are optional. An example usage of options is shown below.
+ All properties are optional.
  
 diff --git a/lib/dns.js b/lib/dns.js
-index 7c76aeb..2a04d1f 100644
+index 5ff28e4..7b4e0eb 100644
 --- a/lib/dns.js
 +++ b/lib/dns.js
 @@ -106,6 +106,7 @@ exports.lookup = function lookup(hostname, options, callback) {
@@ -67,15 +67,17 @@ index 7c76aeb..2a04d1f 100644
      callback(errnoException(err, 'getaddrinfo', hostname));
      return {};
 diff --git a/src/cares_wrap.cc b/src/cares_wrap.cc
-index 4a9c6f7..e333b4a 100644
+index b6c51be..26d42f0 100644
 --- a/src/cares_wrap.cc
 +++ b/src/cares_wrap.cc
-@@ -49,14 +49,20 @@ using v8::Value;
+@@ -79,14 +79,22 @@ inline const char* ToErrorCodeString(int status) {
  
  class GetAddrInfoReqWrap : public ReqWrap<uv_getaddrinfo_t> {
   public:
 -  GetAddrInfoReqWrap(Environment* env, Local<Object> req_wrap_obj);
-+  GetAddrInfoReqWrap(Environment* env, Local<Object> req_wrap_obj, bool verbatim);
++  GetAddrInfoReqWrap(Environment* env,
++                     Local<Object> req_wrap_obj,
++                     bool verbatim);
  
    size_t self_size() const override { return sizeof(*this); }
 +  bool verbatim() const { return verbatim_; }
@@ -94,7 +96,7 @@ index 4a9c6f7..e333b4a 100644
    Wrap(req_wrap_obj, this);
  }
  
-@@ -962,70 +968,38 @@ void AfterGetAddrInfo(uv_getaddrinfo_t* req, int status, struct addrinfo* res) {
+@@ -1133,70 +1141,38 @@ void AfterGetAddrInfo(uv_getaddrinfo_t* req, int status, struct addrinfo* res) {
    };
  
    if (status == 0) {
@@ -185,7 +187,7 @@ index 4a9c6f7..e333b4a 100644
  
      // No responses were found to return
      if (n == 0) {
-@@ -1116,6 +1090,7 @@ static void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
+@@ -1309,6 +1285,7 @@ static void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsObject());
    CHECK(args[1]->IsString());
    CHECK(args[2]->IsInt32());
@@ -193,8 +195,8 @@ index 4a9c6f7..e333b4a 100644
    Local<Object> req_wrap_obj = args[0].As<Object>();
    node::Utf8Value hostname(env->isolate(), args[1]);
  
-@@ -1137,7 +1112,7 @@ static void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
-     ABORT();
+@@ -1329,7 +1306,7 @@ static void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
+     CHECK(0 && "bad address family");
    }
  
 -  GetAddrInfoReqWrap* req_wrap = new GetAddrInfoReqWrap(env, req_wrap_obj);
@@ -203,13 +205,13 @@ index 4a9c6f7..e333b4a 100644
    struct addrinfo hints;
    memset(&hints, 0, sizeof(struct addrinfo));
 diff --git a/test/internet/test-dns.js b/test/internet/test-dns.js
-index aec66f5..273c630 100644
+index f922b35..164ea79 100644
 --- a/test/internet/test-dns.js
 +++ b/test/internet/test-dns.js
-@@ -488,7 +488,7 @@ console.log('looking up nodejs.org...');
+@@ -529,7 +529,7 @@ console.log('looking up nodejs.org...');
  
- var cares = process.binding('cares_wrap');
- var req = new cares.GetAddrInfoReqWrap();
+ const cares = process.binding('cares_wrap');
+ const req = new cares.GetAddrInfoReqWrap();
 -cares.getaddrinfo(req, 'nodejs.org', 4);
 +cares.getaddrinfo(req, 'nodejs.org', 4, /* hints */ 0, /* verbatim */ true);
  
