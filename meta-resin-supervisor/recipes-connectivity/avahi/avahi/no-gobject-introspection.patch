@@ -1,0 +1,66 @@
+Deactivate completely GOBJECT INTROSPECTION as it can fail to build
+and is not required for Avahi operation.
+
+Upstream-status: Inappropiate
+Signed-off-by: Andrei Gherzan <andrei@resin.io>
+
+Index: avahi-0.6.32/avahi-gobject/Makefile.am
+===================================================================
+--- avahi-0.6.32.orig/avahi-gobject/Makefile.am
++++ avahi-0.6.32/avahi-gobject/Makefile.am
+@@ -114,26 +114,26 @@ INTROSPECTION_GIRS =
+ INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir)
+ INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
+
+-if HAVE_INTROSPECTION
+-introspection_sources = $(libavahi_gobject_la_SOURCES)
++#if HAVE_INTROSPECTION
++#introspection_sources = $(libavahi_gobject_la_SOURCES)
+
+-Avahi-0.6.gir: $(lib_LTLIBRARIES)
+-Avahi_0_6_gir_INCLUDES = GObject-2.0 AvahiCore-0.6
+-Avahi_0_6_gir_CFLAGS = $(libavahi_gobject_la_CFLAGS)
+-Avahi_0_6_gir_LIBS = $(lib_LTLIBRARIES)
+-Avahi_0_6_gir_FILES = $(addprefix $(srcdir)/, $(CORE_SOURCES)) $(BUILT_SOURCES)
+-Avahi_0_6_gir_SCANNERFLAGS = --strip-prefix=Ga
+-INTROSPECTION_GIRS += Avahi-0.6.gir
+-INTROSPECTION_INSTALL_GIRS = AvahiCore-0.6.gir $(INTROSPECTION_GIRS)
++#Avahi-0.6.gir: $(lib_LTLIBRARIES)
++#Avahi_0_6_gir_INCLUDES = GObject-2.0 AvahiCore-0.6
++#Avahi_0_6_gir_CFLAGS = $(libavahi_gobject_la_CFLAGS)
++#Avahi_0_6_gir_LIBS = $(lib_LTLIBRARIES)
++#Avahi_0_6_gir_FILES = $(addprefix $(srcdir)/, $(CORE_SOURCES)) $(BUILT_SOURCES)
++#Avahi_0_6_gir_SCANNERFLAGS = --strip-prefix=Ga
++#INTROSPECTION_GIRS += Avahi-0.6.gir
++#INTROSPECTION_INSTALL_GIRS = AvahiCore-0.6.gir $(INTROSPECTION_GIRS)
+
+-girdir = $(datadir)/gir-1.0
+-gir_DATA = $(INTROSPECTION_INSTALL_GIRS)
++#girdir = $(datadir)/gir-1.0
++#gir_DATA = $(INTROSPECTION_INSTALL_GIRS)
+
+-typelibdir = $(libdir)/girepository-1.0
+-typelib_DATA = $(INTROSPECTION_INSTALL_GIRS:.gir=.typelib)
++#typelibdir = $(libdir)/girepository-1.0
++#typelib_DATA = $(INTROSPECTION_INSTALL_GIRS:.gir=.typelib)
+
+-CLEANFILES += $(INTROSPECTION_GIRS) $(typelib_DATA)
+-endif
++#CLEANFILES += $(INTROSPECTION_GIRS) $(typelib_DATA)
++#endif
+
+ endif
+ endif
+Index: avahi-0.6.32/configure.ac
+===================================================================
+--- avahi-0.6.32.orig/configure.ac
++++ avahi-0.6.32/configure.ac
+@@ -473,7 +473,7 @@ AM_CONDITIONAL(HAVE_GOBJECT, test "x$HAV
+ #
+ # Introspection support.
+ #
+-GOBJECT_INTROSPECTION_CHECK([0.9.5])
++#GOBJECT_INTROSPECTION_CHECK([0.9.5])
+
+ #
+ # Check for Qt 3
