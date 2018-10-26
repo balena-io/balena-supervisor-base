@@ -110,14 +110,14 @@ docker run ${REMOVE_CONTAINER} \
     resin/yocto-build-env \
     bash -ex /yocto/resin-board/build.sh
 
-docker build -t resin/$ARCH-supervisor-base:$TAG $WORKSPACE
+docker build -t balena/$ARCH-supervisor-base:$TAG $WORKSPACE
 
 if [ "$PUSH" = "true" ]; then
-	docker push resin/$ARCH-supervisor-base:$TAG
+	docker push balena/$ARCH-supervisor-base:$TAG
 
 	if [ "$TAG" = "master" ]; then
 		VERSION_TAG=v$(jq --raw-output .version package.json)
-		docker tag resin/$ARCH-supervisor-base:$TAG resin/$ARCH-supervisor-base:$VERSION_TAG
-		docker push resin/$ARCH-supervisor-base:$VERSION_TAG
+		docker tag balena/$ARCH-supervisor-base:$TAG balena/$ARCH-supervisor-base:$VERSION_TAG
+		docker push balena/$ARCH-supervisor-base:$VERSION_TAG
 	fi
 fi
