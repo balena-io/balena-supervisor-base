@@ -1,0 +1,5 @@
+---
+reviewers: 1
+docker: false
+npm:
+  run: false

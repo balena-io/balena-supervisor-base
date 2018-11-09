@@ -1,7 +1,7 @@
 {
-  "name": "resin-supervisor-base",
+  "name": "balena-supervisor-base",
   "version": "1.3.0",
-  "description": "Minimal base image for resin-supervisor",
+  "description": "Minimal base image for balena-supervisor",
   "main": "none",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,6 +10,6 @@
     "type": "git",
     "url": "github.com/resin-io/resin-supervisor-base"
   },
-  "author": "Resinio Ltd",
+  "author": "Balena Ltd",
   "license": "Apache-2.0"
 }
