@@ -115,8 +115,10 @@ docker build -t balena/$ARCH-supervisor-base:$TAG $WORKSPACE
 if [ "$PUSH" = "true" ]; then
 	docker push balena/$ARCH-supervisor-base:$TAG
 
-	if [ "$TAG" = "master" ]; then
-		VERSION_TAG=v$(jq --raw-output .version package.json)
+	VERSION_TAG=v$(jq --raw-output .version package.json)
+	GIT_TAG=$(git describe --tags | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
+	echo "git tag is '$GIT_TAG' and package.json version is '$VERSION_TAG'"
+	if [ "${VERSION_TAG}" = "${GIT_TAG}" ]; then
 		docker tag balena/$ARCH-supervisor-base:$TAG balena/$ARCH-supervisor-base:$VERSION_TAG
 		docker push balena/$ARCH-supervisor-base:$VERSION_TAG
 	fi
