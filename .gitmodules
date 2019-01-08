@@ -9,3 +9,7 @@
 [submodule "bitbake"]
 	path = bitbake
 	url = git://git.openembedded.org/bitbake
+[submodule "meta-oe"]
+	path = meta-oe
+	url = git://git.openembedded.org/meta-openembedded
+	branch = krogoth

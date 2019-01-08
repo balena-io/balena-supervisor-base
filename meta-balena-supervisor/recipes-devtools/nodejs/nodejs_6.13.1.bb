@@ -1,4 +1,10 @@
+FILESEXTRAPATHS_append := ":${THISDIR}/${PN}"
+
 require ${TOPDIR}/../meta-nodejs/recipes-devtools/nodejs/nodejs_6.inc
+
+SRC_URI_append = " \
+    file://0001-dns-add-verbatim-option-to-dns.lookup.patch \
+    "
 
 INC_PR = "r1"
 
