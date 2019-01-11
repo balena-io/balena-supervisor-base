@@ -43,6 +43,6 @@ sudo -H -E -u builder \
 	/bin/bash -c "mkdir -p $BUILD_DIR \
 	&& cp -r $SOURCE_DIR/* $BUILD_DIR/ \
 	&& cd $BUILD_DIR \
-	&& source oe-core/oe-init-build-env build bitbake \
-	&& DISTRO="" DL_DIR=$SHARED_DOWNLOADS SSTATE_DIR=$SHARED_SSTATE MACHINE=$TARGET_MACHINE $BUILD_DIR/bitbake/bin/bitbake core-image-minimal"
+	&& TEMPLATECONF=$BUILD_DIR/build-samples/ source oe-core/oe-init-build-env build \
+	&& BB_ENV_EXTRAWHITE="$BB_ENV_EXTRAWHITE DL_DIR SSTATE_DIR" DL_DIR=$SHARED_DOWNLOADS SSTATE_DIR=$SHARED_SSTATE MACHINE=$TARGET_MACHINE bitbake core-image-minimal"
 cp $BUILD_DIR/build/tmp-glibc/deploy/images/$TARGET_MACHINE/core-image-minimal-$TARGET_MACHINE.tar.gz $DEST_DIR/rootfs.tar.gz
