@@ -1,4 +1,11 @@
+SRC_URI_append = " file://0001-dns-add-verbatim-option-to-dns.lookup.patch"
+
+# Be able to find the following inc file
+FILESEXTRAPATHS_append := ":${THISDIR}/../../../meta-nodejs/recipes-devtools/${PN}/files"
 require ${TOPDIR}/../meta-nodejs/recipes-devtools/nodejs/nodejs_6.inc
+
+# nodejs 6 doesn't compile with openssl 1.1.x so use the openssl10 dependency
+PACKAGECONFIG[openssl] = "--shared-openssl,,openssl10,"
 
 INC_PR = "r1"
 
