@@ -1,0 +1,18 @@
+ 
+ ---------------------------------------- 
+ Balena supervisor base images
+ ---------------------------------------- 
+
+Balena supervisor base image is supported on the following machines:
+
+generic-armv6		: MACHINE=generic-armv6 bitbake core-image-minimal
+generic-armv7hf		: MACHINE=generic-armv7hf bitbake core-image-minimal
+generic-armv8		: MACHINE=generic-armv8 bitbake core-image-minimal
+generic-x86-64		: MACHINE=generic-x86-64 bitbake core-image-minimal
+generic-x86		: MACHINE=generic-x86 bitbake core-image-minimal
+i386-nlp		: MACHINE=i386-nlp bitbake core-image-minimal
+
+* Besides the machine, you can also adjust DL_DIR, SSTATE_DIR but you also need to define BB_ENV_EXTRAWHITE.
+Example:
+BB_ENV_EXTRAWHITE="$BB_ENV_EXTRAWHITE DL_DIR SSTATE_DIR" DL_DIR=a SSTATE_DIR=b MACHINE=b core-image-minimal
+
