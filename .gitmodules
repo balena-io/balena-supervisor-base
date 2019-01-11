@@ -9,3 +9,9 @@
 [submodule "bitbake"]
 	path = bitbake
 	url = git://git.openembedded.org/bitbake
+[submodule "meta-balena-supervisor/meta-openembedded"]
+	path = meta-balena-supervisor/meta-openembedded
+	url = git://git.openembedded.org/meta-openembedded
+[submodule "meta-openembedded"]
+	path = meta-openembedded
+	url = git://git.openembedded.org/meta-openembedded
