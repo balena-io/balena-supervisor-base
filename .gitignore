@@ -1,7 +1,11 @@
-
-build/bitbake.lock
-build/cache
-build/downloads
-build/sstate-cache
-build/tmp-glibc
+# Out artefact
 out/rootfs.tar.gz
+
+# Build directory
+build
+
+# Out-of-build download and sstate directories
+downloads
+shared-downloads
+sstate-cache
+shared-sstate-cache
