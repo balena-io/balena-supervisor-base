@@ -11,7 +11,6 @@
 # the option is a question of removing the # character and making any change to the
 # variable as required.
 
-
 PREFERRED_PROVIDER_virtual/kernel="linux-dummy"
 
 #
