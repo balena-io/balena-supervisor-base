@@ -17,6 +17,8 @@ PREFERRED_PROVIDER_virtual/kernel="linux-dummy"
 # use by default unless a preferred version is specified
 BBFILE_PRIORITY_nodejs = "3"
 
+DISTRO = "nodistro"
+
 #
 # Machine Selection
 #
