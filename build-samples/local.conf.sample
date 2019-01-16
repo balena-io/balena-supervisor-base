@@ -11,8 +11,13 @@
 # the option is a question of removing the # character and making any change to the
 # variable as required.
 
-
 PREFERRED_PROVIDER_virtual/kernel="linux-dummy"
+
+# Other layers have lower priority but provide newer versions which we want to
+# use by default unless a preferred version is specified
+BBFILE_PRIORITY_nodejs = "3"
+
+DISTRO = "nodistro"
 
 #
 # Machine Selection
@@ -229,4 +234,3 @@ ASSUME_PROVIDED += "gobject-introspection gobject-introspection-native"
 IMAGE_INSTALL_append += " btrfs-tools ca-certificates iptables libnss-mdns nodejs rsync"
 VIRTUAL-RUNTIME_init_manager="busybox"
 VIRTUAL-RUNTIME_dev_manager="busybox-mdev"
-PREFERRED_VERSION_nodejs = "6.13.1"
