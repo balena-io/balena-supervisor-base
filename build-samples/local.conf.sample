@@ -231,6 +231,6 @@ DISTRO_FEATURES_BACKFILL_CONSIDERED += "gobject-introspection-data"
 # to consider it provided.
 ASSUME_PROVIDED += "gobject-introspection gobject-introspection-native"
 
-IMAGE_INSTALL_append += " btrfs-tools ca-certificates iptables libnss-mdns nodejs rsync"
+IMAGE_INSTALL_append += " ca-certificates iptables libnss-mdns nodejs rsync"
 VIRTUAL-RUNTIME_init_manager="busybox"
 VIRTUAL-RUNTIME_dev_manager="busybox-mdev"
