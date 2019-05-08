@@ -1,6 +1,6 @@
 [submodule "meta-nodejs"]
 	path = meta-nodejs
-	url = git@github.com:balena-os/meta-nodejs.git
+	url = https://github.com/balena-os/meta-nodejs.git
 [submodule "oe-core"]
 	path = oe-core
 	url = git://git.openembedded.org/openembedded-core
