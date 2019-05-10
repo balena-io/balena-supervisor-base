@@ -1,11 +1,9 @@
 [submodule "meta-nodejs"]
 	path = meta-nodejs
-	url = https://github.com/imyller/meta-nodejs.git
-	branch = krogoth
+	url = https://github.com/balena-os/meta-nodejs.git
 [submodule "oe-core"]
 	path = oe-core
 	url = git://git.openembedded.org/openembedded-core
-	branch = krogoth
 [submodule "bitbake"]
 	path = bitbake
 	url = git://git.openembedded.org/bitbake

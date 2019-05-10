@@ -16,7 +16,6 @@ PREFERRED_PROVIDER_virtual/kernel="linux-dummy"
 # Other layers have lower priority but provide newer versions which we want to
 # use by default unless a preferred version is specified
 BBFILE_PRIORITY_nodejs = "3"
-BBFILE_PRIORITY_openembedded-layer = "3"
 
 DISTRO = "nodistro"
 
